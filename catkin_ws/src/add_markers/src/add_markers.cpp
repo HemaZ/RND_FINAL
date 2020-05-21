@@ -31,23 +31,15 @@
 // %Tag(INCLUDES)%
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
-#include <nav_msgs/Odometry.h>
+#include <std_msgs/Int8.h>
 // %EndTag(INCLUDES)%
 int location = -1; // 0 for pickup and 1 for drop
 
-void Callback(const nav_msgs::Odometry::ConstPtr& msg)
+void Callback(const std_msgs::Int8::ConstPtr& msg)
 {
-  double x = msg->pose.pose.position.x;
-  double y = msg->pose.pose.position.y;
-
-  if(x-3.5<0.1 && y+2.5 <0.1){
-      ROS_INFO("in Pickup Location");
-      location = 0;
-  }else if(x==0 && y ==0)
-  {
-    ROS_INFO("in drop Location");
-    location = 1;
-  }
+  
+  ROS_INFO(" received %d", msg->data);
+  location = msg->data;
   
 }
 
@@ -60,7 +52,7 @@ int main( int argc, char** argv )
   ros::NodeHandle n;
   ros::Rate r(1);
   ros::Publisher marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 1);
-ros::Subscriber sub = n.subscribe("/odom", 1000, Callback);
+ros::Subscriber sub = n.subscribe("/robot/state", 1000, Callback);
 // %EndTag(INIT)%
 
   // Set our initial shape type to be a cube
@@ -133,16 +125,19 @@ ros::Subscriber sub = n.subscribe("/odom", 1000, Callback);
     marker_pub.publish(marker);
     while(location == -1){
         ros::Duration(0.1).sleep();
+        ros::spinOnce();
     }
     marker.action = visualization_msgs::Marker::DELETE;
     marker.header.stamp = ros::Time::now();
     marker_pub.publish(marker);
     while(location == 0){
         ros::Duration(0.1).sleep();
+        ros::spinOnce();
     }
     marker.pose.position.x = 0;
     marker.pose.position.y = 0;
      marker.header.stamp = ros::Time::now();
+     marker.action = visualization_msgs::Marker::ADD;
 marker_pub.publish(marker);
 
 
